@@ -125,13 +125,13 @@
         if (self.shouldUseTagReaderSession) {
             NSLog(@"Using NFCTagReaderSession");
 
-            self.nfcSession = [[NFCTagReaderSession new]
+            self.nfcSession = [[NFCTagReaderSession alloc]
                        initWithPollingOption:(NFCPollingISO14443 | NFCPollingISO15693)
                        delegate:self queue:dispatch_get_main_queue()];
 
         } else {
             NSLog(@"Using NFCTagReaderSession");
-            self.nfcSession = [[NFCNDEFReaderSession new]initWithDelegate:self queue:nil invalidateAfterFirstRead:FALSE];
+            self.nfcSession = [[NFCNDEFReaderSession alloc]initWithDelegate:self queue:nil invalidateAfterFirstRead:FALSE];
         }
     }
 
@@ -204,9 +204,9 @@
 - (void) readerSession:(NFCNDEFReaderSession *)session didDetectNDEFs:(NSArray<NFCNDEFMessage *> *)messages API_AVAILABLE(ios(11.0)) {
     NSLog(@"NFCNDEFReaderSession didDetectNDEFs");
     
-    session.alertMessage = @"Tag successfully read.";
+    //session.alertMessage = @"Tag successfully read.";
     for (NFCNDEFMessage *message in messages) {
-        [self fireNdefEvent: message];
+        //[self fireNdefEvent: message];
     }
 }
 
@@ -306,12 +306,12 @@
         
         if (self.shouldUseTagReaderSession) {
             NSLog(@"Using NFCTagReaderSession");
-            self.nfcSession = [[NFCTagReaderSession new]
+            self.nfcSession = [[NFCTagReaderSession alloc]
                            initWithPollingOption:(NFCPollingISO14443 | NFCPollingISO15693)
                            delegate:self queue:dispatch_get_main_queue()];
         } else {
             NSLog(@"Using NFCNDEFReaderSession");
-            self.nfcSession = [[NFCNDEFReaderSession new]initWithDelegate:self queue:nil invalidateAfterFirstRead:TRUE];
+            self.nfcSession = [[NFCNDEFReaderSession alloc]initWithDelegate:self queue:nil invalidateAfterFirstRead:FALSE];
         }
         sessionCallbackId = [command.callbackId copy];
         self.nfcSession.alertMessage = @"Hold near NFC tag to scan.";
@@ -319,7 +319,7 @@
         
     } else if (@available(iOS 11.0, *)) {
         NSLog(@"iOS < 13, using NFCNDEFReaderSession");
-        self.nfcSession = [[NFCNDEFReaderSession new]initWithDelegate:self queue:nil invalidateAfterFirstRead:TRUE];
+        self.nfcSession = [[NFCNDEFReaderSession alloc]initWithDelegate:self queue:nil invalidateAfterFirstRead:FALSE];
         sessionCallbackId = [command.callbackId copy];
         self.nfcSession.alertMessage = @"Hold near NFC tag to scan.";
         [self.nfcSession beginSession];
@@ -375,7 +375,7 @@
     }
     
     [tag readNDEFWithCompletionHandler:^(NFCNDEFMessage * _Nullable message, NSError * _Nullable error) {
-
+        
         // Error Code=403 "NDEF tag does not contain any NDEF message" is not an error for this plugin
         if (error && error.code != 403) {
             NSLog(@"%@", error);
@@ -386,6 +386,8 @@
             session.alertMessage = @"Tag successfully read.";
             [self fireNdefEvent:message metaData:metaData];
             [self closeSession:session];
+            [self.nfcSession invalidateSession];
+
         }
 
     }];
@@ -471,6 +473,8 @@
         NSLog(@"sendError: %@", message);
         CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:message];
         [self.commandDelegate sendPluginResult:pluginResult callbackId:sessionCallbackId];
+        [self.nfcSession invalidateSession];
+
     }
 }
 
